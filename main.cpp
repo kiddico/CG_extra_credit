@@ -1,21 +1,8 @@
 #include <stdio.h>
 #include <stdint.h>
-
-
 #include <linux/version.h>
 #include <linux/input.h>
-
-#include <string.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <dirent.h>
-#include <errno.h>
-#include <getopt.h>
-#include <ctype.h>
-#include <signal.h>
-#include <sys/time.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 #include <GL/glut.h>
@@ -28,8 +15,8 @@ float touch_x =0.0;
 float touch_y =0.0;
 float max_x = 4475.0;
 float max_y = 3606.0;
-float min_x =1232;
-float min_y =1175;
+float min_x =1264;
+float min_y =1075;
 
 GLubyte rasters[24] = {
 	0xc0, 0x00, 0xc0, 0x00, 0xc0, 0x00, 0xc0, 0x00, 0xc0, 0x00,
@@ -80,22 +67,24 @@ static void getTouchpadData (int fd)
 {
 	// used to know when we've made it to the second event (aka already read the first)
 	bool one_done = false;
+	// things from evtest
 	struct input_event ev[64];
 	int i, rd;
 	fd_set rdfs;
 	FD_ZERO(&rdfs);
 	FD_SET(fd, &rdfs);
-
 	select(fd + 1, &rdfs, NULL, NULL, NULL);
 	rd = read(fd, ev, sizeof(ev));
 	
 	for (i = 0; i < rd / sizeof(struct input_event); i++) {
 		unsigned int type, code;
-
 		type = ev[i].type;
 		code = ev[i].code;
+		// if the type is either abs_x, or abs_y
 		if( code == 0 || code == 1)
 			if( ev[i].value != 0 ){
+				// make sure we don't get nonsense
+				// might be useful later for when hand is lifted off pad
 				if( !one_done){
 					touch_x = float(ev[i].value);
 					one_done = true;
@@ -105,6 +94,7 @@ static void getTouchpadData (int fd)
 			}
 
 	}
+	// give the device back to the system
 	ioctl(fd, EVIOCGRAB, (void*)0);
 }
 
@@ -127,9 +117,9 @@ int main(int argc, char** argv)
 	int fd = open(device, O_RDONLY);
 	while(true){
 		getTouchpadData(fd);
-		std::cout << "X: " << (touch_x-1232) << " \nY: " << (touch_y-1175) << std::endl;
-		std::cout << "X %: "<< ( ((touch_x-1232)/ max_x) * 100 ) << " Y %: " << ( (touch_y-1175)/max_y * 100)<<std::endl;
-		std::cout<<std::endl;
+		std::cout << "X: " << (touch_x-min_x) << " \nY: " << (touch_y-min_y) << std::endl;
+		std::cout<<"X%: "<<valToPercent(touch_x,min_x,max_x)<< " Y%: "<<valToPercent(touch_y,min_y,max_y)<<std::endl;
+		std::cout<<"-----------------------------"<<std::endl;
 	}
 	
 	init();
