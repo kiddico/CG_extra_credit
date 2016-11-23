@@ -1,0 +1,7 @@
+read trackpad absolute position
+as it moves record the positions/path.
+
+use those locations to make a new character / array
+
+save that, add to end of last character / string
+draw them all in a row in order of creation
