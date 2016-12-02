@@ -17,11 +17,12 @@ float max_x = 4475.0;
 float max_y = 3606.0;
 float min_x =1264;
 float min_y =1075;
+int fd; // File descriptor for trackpad
+int first[2] = {0,0};
+int second[2] = {0,0};
 
-GLubyte rasters[24] = {
-	0xc0, 0x00, 0xc0, 0x00, 0xc0, 0x00, 0xc0, 0x00, 0xc0, 0x00,
-	0xff, 0x00, 0xff, 0x00, 0xc0, 0x00, 0xc0, 0x00, 0xc0, 0x00,
-	0xff, 0xc0, 0xff, 0xc0 };
+float valToPercent(float,float,float);
+static void getTouchpadData(int);
 
 void init(void)
 {
@@ -33,11 +34,12 @@ void display(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT);
 	glColor3f(1.0, 1.0, 1.0);
+	
+	// int x = ( (1920 * valToPercent(touch_x,min_x,max_x)) ) 
+	// int y =( 1080 - (1080  * valToPercent(touch_y,min_y,max_y) ))
 
-	glRasterPos2i(10, 400);
-	glBitmap(10, 12, 0.0, 0.0, 11.0, 0.0, rasters);
-	glBitmap(10, 12, 0.0, 0.0, 11.0, 0.0, rasters);
-	glBitmap(10, 12, 0.0, 0.0, 11.0, 0.0, rasters);
+
+
 
 	glutSwapBuffers();
 }
@@ -60,8 +62,23 @@ void keyboard(unsigned char key, int x, int y)
 }
 
 void passiveTrack(int x,int y){
-	
+	getTouchpadData(fd);
+	/*
+	if(!first)
+		first = true;
+*/
+	glutPostRedisplay();
 }
+
+void idle(){
+	/*
+	if (first){
+		lift=true;
+		first=false;
+	}*/
+}
+
+
 
 static void getTouchpadData (int fd)
 {
@@ -99,34 +116,31 @@ static void getTouchpadData (int fd)
 }
 
 float valToPercent(float value,float min, float max){
-	return ( ( value - min ) / max ) * 100;
+	return ( ( value - min ) / max );
 }
 
 int main(int argc, char** argv)
 {
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
-	glutInitWindowSize(768, 768);
+	glutInitWindowSize(1920, 1080);
 	glutInitWindowPosition(100, 100);
-	glutCreateWindow("Testing!");
+	glutCreateWindow("Assignment 0");
 	glutSetCursor(GLUT_CURSOR_NONE); 
 	
+
+
 	// this is where we'll make the file descriptor to pass into the
 	// print events function
 	const char *device = "/dev/input/event1";
-	int fd = open(device, O_RDONLY);
-	while(true){
-		getTouchpadData(fd);
-		std::cout << "X: " << (touch_x-min_x) << " \nY: " << (touch_y-min_y) << std::endl;
-		std::cout<<"X%: "<<valToPercent(touch_x,min_x,max_x)<< " Y%: "<<valToPercent(touch_y,min_y,max_y)<<std::endl;
-		std::cout<<"-----------------------------"<<std::endl;
-	}
+	fd = open(device, O_RDONLY);
 	
 	init();
 	glutPassiveMotionFunc(passiveTrack);
 	glutReshapeFunc(reshape);
 	glutKeyboardFunc(keyboard);
 	glutDisplayFunc(display);
+	glutIdleFunc(idle);
 	glutMainLoop();
 	return 0;
 }
